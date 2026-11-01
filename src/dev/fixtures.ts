@@ -43,6 +43,7 @@ interface FixtureTabInput {
   title?: string | undefined;
   url?: string | undefined;
   active?: boolean | undefined;
+  pinned?: boolean | undefined;
 }
 
 /**
@@ -54,6 +55,7 @@ export function createFixtureTab({
   title,
   url,
   active = false,
+  pinned = false,
 }: FixtureTabInput): chrome.tabs.Tab {
   return {
     id,
@@ -61,7 +63,7 @@ export function createFixtureTab({
     title,
     url,
     active,
-    pinned: false,
+    pinned,
     highlighted: false,
     windowId: 1,
     frozen: false,
@@ -76,23 +78,30 @@ export function createFixtureTab({
 
 export const initialTabs: readonly chrome.tabs.Tab[] = [
   createFixtureTab({
-    id: 101,
+    id: 100,
     index: 0,
+    title: 'Hacker News',
+    url: 'https://news.ycombinator.com/',
+    pinned: true,
+  }),
+  createFixtureTab({
+    id: 101,
+    index: 1,
     title: 'GitHub',
     url: 'https://github.com/',
     active: true,
   }),
-  createFixtureTab({ id: 102, index: 1, title: 'Google', url: 'https://www.google.com/' }),
-  createFixtureTab({ id: 103, index: 2, title: 'Figma', url: 'https://www.figma.com/files/' }),
+  createFixtureTab({ id: 102, index: 2, title: 'Google', url: 'https://www.google.com/' }),
+  createFixtureTab({ id: 103, index: 3, title: 'Figma', url: 'https://www.figma.com/files/' }),
   createFixtureTab({
     id: 104,
-    index: 3,
+    index: 4,
     title: 'Chrome Extensions',
     url: 'https://developer.chrome.com/docs/extensions/',
   }),
   createFixtureTab({
     id: 105,
-    index: 4,
+    index: 5,
     title: 'MDN Web Docs',
     url: 'https://developer.mozilla.org/',
   }),

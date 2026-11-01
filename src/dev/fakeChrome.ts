@@ -51,98 +51,277 @@ export function installFakeChrome(): void {
   };
   const storageEvents = createEvent<[StorageChanges, chrome.storage.AreaName]>();
   const storageData = new Map<string, unknown>();
+  const sessionData = new Map<string, unknown>();
 
   let tabs = initialTabs.map((tab) => ({ ...tab }));
   let nextTabId = Math.max(0, ...tabs.map((tab) => tab.id ?? 0)) + 1;
 
-  const local = {
-    async get(
-      keys?: string | string[] | Record<string, unknown> | null,
-    ): Promise<Record<string, unknown>> {
-      if (keys === undefined || keys === null) {
-        return Object.fromEntries(storageData);
+  /** ピン留めタブが先頭、それ以外が後ろになるように並べ直す。 */
+  function reorderTabs(): void {
+    tabs = [...tabs]
+      .sort((a, b) => {
+        if (a.pinned === b.pinned) {
+          return a.index - b.index;
+        }
+        return a.pinned ? -1 : 1;
+      })
+      .map((tab, index) => ({ ...tab, index }));
+  }
+
+  let nextBookmarkId = 1;
+  const rootNode: BookmarkNode = {
+    id: '0',
+    title: '',
+    syncing: false,
+    children: [
+      {
+        id: '1',
+        title: 'Bookmarks bar',
+        syncing: false,
+        children: bookmarkBar.map(cloneBookmarkNode),
+      },
+    ],
+  };
+
+  function findBookmarkNode(
+    id: string,
+    nodes: readonly BookmarkNode[] = [rootNode],
+  ): BookmarkNode | undefined {
+    for (const node of nodes) {
+      if (node.id === id) {
+        return node;
       }
 
-      if (typeof keys === 'string') {
-        return storageData.has(keys) ? { [keys]: storageData.get(keys) } : {};
+      const found = node.children === undefined ? undefined : findBookmarkNode(id, node.children);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+
+    return undefined;
+  }
+
+  function findBookmarkParent(
+    id: string,
+    nodes: readonly BookmarkNode[] = [rootNode],
+  ): BookmarkNode | undefined {
+    for (const node of nodes) {
+      if (node.children?.some((child) => child.id === id) === true) {
+        return node;
       }
 
-      if (Array.isArray(keys)) {
-        return Object.fromEntries(
-          keys.filter((key) => storageData.has(key)).map((key) => [key, storageData.get(key)]),
-        );
+      const found = node.children === undefined ? undefined : findBookmarkParent(id, node.children);
+      if (found !== undefined) {
+        return found;
       }
+    }
 
-      return Object.fromEntries(
-        Object.entries(keys).map(([key, defaultValue]) => [
-          key,
-          storageData.has(key) ? storageData.get(key) : defaultValue,
-        ]),
-      );
-    },
+    return undefined;
+  }
 
-    async set(items: Record<string, unknown>): Promise<void> {
-      const changes: StorageChanges = {};
+  function removeBookmarkNode(id: string): void {
+    const parent = findBookmarkParent(id);
+    if (parent === undefined) {
+      throw new Error(`ブックマークが見つかりません: ${id}`);
+    }
 
-      for (const [key, newValue] of Object.entries(items)) {
-        changes[key] = { oldValue: storageData.get(key), newValue };
-        storageData.set(key, newValue);
-      }
+    const children = parent.children ?? [];
+    const index = children.findIndex((node) => node.id === id);
+    if (index === -1) {
+      throw new Error(`ブックマークが見つかりません: ${id}`);
+    }
 
-      storageEvents.trigger(changes, 'local');
-    },
+    const node = children[index];
+    if (node === undefined) {
+      throw new Error(`ブックマークが見つかりません: ${id}`);
+    }
 
-    async remove(keys: string | string[]): Promise<void> {
-      const keysToRemove = typeof keys === 'string' ? [keys] : keys;
-      const changes: StorageChanges = {};
+    children.splice(index, 1);
+    bookmarkEvents.onRemoved.trigger(id, { parentId: parent.id, index, node });
+  }
 
-      for (const key of keysToRemove) {
-        if (!storageData.has(key)) {
-          continue;
+  function createStorageArea(data: Map<string, unknown>, areaName: chrome.storage.AreaName) {
+    return {
+      async get(
+        keys?: string | string[] | Record<string, unknown> | null,
+      ): Promise<Record<string, unknown>> {
+        if (keys === undefined || keys === null) {
+          return Object.fromEntries(data);
         }
 
-        changes[key] = { oldValue: storageData.get(key), newValue: undefined };
-        storageData.delete(key);
-      }
+        if (typeof keys === 'string') {
+          return data.has(keys) ? { [keys]: data.get(keys) } : {};
+        }
 
-      if (Object.keys(changes).length > 0) {
-        storageEvents.trigger(changes, 'local');
-      }
-    },
+        if (Array.isArray(keys)) {
+          return Object.fromEntries(
+            keys.filter((key) => data.has(key)).map((key) => [key, data.get(key)]),
+          );
+        }
 
-    async clear(): Promise<void> {
-      const changes: StorageChanges = {};
+        return Object.fromEntries(
+          Object.entries(keys).map(([key, defaultValue]) => [
+            key,
+            data.has(key) ? data.get(key) : defaultValue,
+          ]),
+        );
+      },
 
-      for (const [key, oldValue] of storageData) {
-        changes[key] = { oldValue, newValue: undefined };
-      }
+      async set(items: Record<string, unknown>): Promise<void> {
+        const changes: StorageChanges = {};
 
-      storageData.clear();
+        for (const [key, newValue] of Object.entries(items)) {
+          changes[key] = { oldValue: data.get(key), newValue };
+          data.set(key, newValue);
+        }
 
-      if (Object.keys(changes).length > 0) {
-        storageEvents.trigger(changes, 'local');
-      }
-    },
-  };
+        storageEvents.trigger(changes, areaName);
+      },
+
+      async remove(keys: string | string[]): Promise<void> {
+        const keysToRemove = typeof keys === 'string' ? [keys] : keys;
+        const changes: StorageChanges = {};
+
+        for (const key of keysToRemove) {
+          if (!data.has(key)) {
+            continue;
+          }
+
+          changes[key] = { oldValue: data.get(key), newValue: undefined };
+          data.delete(key);
+        }
+
+        if (Object.keys(changes).length > 0) {
+          storageEvents.trigger(changes, areaName);
+        }
+      },
+
+      async clear(): Promise<void> {
+        const changes: StorageChanges = {};
+
+        for (const [key, oldValue] of data) {
+          changes[key] = { oldValue, newValue: undefined };
+        }
+
+        data.clear();
+
+        if (Object.keys(changes).length > 0) {
+          storageEvents.trigger(changes, areaName);
+        }
+      },
+    };
+  }
+
+  const local = createStorageArea(storageData, 'local');
+  const session = createStorageArea(sessionData, 'session');
 
   const bookmarks = {
     async getTree(): Promise<BookmarkNode[]> {
-      return [
-        {
-          id: '0',
-          title: '',
-          syncing: false,
-          children: [
-            {
-              id: '1',
-              title: 'Bookmarks bar',
-              syncing: false,
-              children: bookmarkBar.map(cloneBookmarkNode),
-            },
-          ],
-        },
-      ];
+      return [cloneBookmarkNode(rootNode)];
     },
+
+    async create(details: chrome.bookmarks.CreateDetails): Promise<BookmarkNode> {
+      const parentId = details.parentId ?? '1';
+      const parent = findBookmarkNode(parentId);
+      if (parent === undefined || parent.url !== undefined) {
+        throw new Error(`ブックマークの親が見つかりません: ${parentId}`);
+      }
+
+      const node: BookmarkNode =
+        details.url === undefined
+          ? {
+              id: `mock-folder-${nextBookmarkId}`,
+              title: details.title ?? '',
+              syncing: false,
+              children: [],
+            }
+          : {
+              id: `mock-bookmark-${nextBookmarkId}`,
+              title: details.title ?? '',
+              syncing: false,
+              url: details.url,
+            };
+      nextBookmarkId += 1;
+
+      const children = (parent.children ??= []);
+      const index = Math.min(Math.max(details.index ?? children.length, 0), children.length);
+      children.splice(index, 0, node);
+      bookmarkEvents.onCreated.trigger(node.id, cloneBookmarkNode(node));
+
+      return cloneBookmarkNode(node);
+    },
+
+    async update(id: string, changes: chrome.bookmarks.UpdateChanges): Promise<BookmarkNode> {
+      const node = findBookmarkNode(id);
+      if (node === undefined) {
+        throw new Error(`ブックマークが見つかりません: ${id}`);
+      }
+
+      if (changes.title !== undefined) {
+        node.title = changes.title;
+      }
+      if (changes.url !== undefined) {
+        node.url = changes.url;
+      }
+
+      bookmarkEvents.onChanged.trigger(id, { title: node.title, url: node.url });
+      return cloneBookmarkNode(node);
+    },
+
+    async move(id: string, destination: chrome.bookmarks.MoveDestination): Promise<BookmarkNode> {
+      const node = findBookmarkNode(id);
+      const oldParent = findBookmarkParent(id);
+      if (node === undefined || oldParent === undefined) {
+        throw new Error(`ブックマークが見つかりません: ${id}`);
+      }
+
+      const newParentId = destination.parentId ?? oldParent.id;
+      const newParent = findBookmarkNode(newParentId);
+      if (newParent === undefined || newParent.url !== undefined) {
+        throw new Error(`移動先のフォルダが見つかりません: ${newParentId}`);
+      }
+
+      const oldChildren = oldParent.children ?? [];
+      const oldIndex = oldChildren.indexOf(node);
+      if (oldIndex === -1) {
+        throw new Error(`ブックマークが見つかりません: ${id}`);
+      }
+
+      const newChildren = newParent.children ?? [];
+      let index = Math.min(
+        Math.max(destination.index ?? newChildren.length, 0),
+        newChildren.length,
+      );
+
+      if (oldParent === newParent) {
+        if (index === oldIndex || index === oldIndex + 1) {
+          return cloneBookmarkNode(node);
+        }
+        if (index > oldIndex) {
+          index -= 1;
+        }
+      }
+
+      oldChildren.splice(oldIndex, 1);
+      (newParent.children ??= []).splice(index, 0, node);
+      bookmarkEvents.onMoved.trigger(id, {
+        parentId: newParent.id,
+        index,
+        oldParentId: oldParent.id,
+        oldIndex,
+      });
+
+      return cloneBookmarkNode(node);
+    },
+
+    async remove(id: string): Promise<void> {
+      removeBookmarkNode(id);
+    },
+
+    async removeTree(id: string): Promise<void> {
+      removeBookmarkNode(id);
+    },
+
     ...bookmarkEvents,
   };
 
@@ -171,7 +350,63 @@ export function installFakeChrome(): void {
         tab.url = updateProperties.url;
       }
 
+      if (updateProperties.pinned !== undefined) {
+        tab.pinned = updateProperties.pinned;
+        reorderTabs();
+      }
+
+      if (updateProperties.muted !== undefined) {
+        tab.mutedInfo = { muted: updateProperties.muted };
+      }
+
+      tabEvents.onUpdated.trigger(tabId, {}, { ...tab });
+
       return { ...tab };
+    },
+
+    async get(tabId: number): Promise<chrome.tabs.Tab> {
+      const tab = tabs.find((item) => item.id === tabId);
+      if (tab === undefined) {
+        throw new Error(`タブが見つかりません: ${tabId}`);
+      }
+
+      return { ...tab };
+    },
+
+    async move(
+      tabId: number,
+      moveProperties: chrome.tabs.MoveProperties,
+    ): Promise<chrome.tabs.Tab> {
+      const fromIndex = tabs.findIndex((tab) => tab.id === tabId);
+      if (fromIndex === -1) {
+        throw new Error(`タブが見つかりません: ${tabId}`);
+      }
+
+      let toIndex = moveProperties.index;
+      if (toIndex < 0 || toIndex >= tabs.length) {
+        toIndex = tabs.length - 1;
+      }
+
+      if (toIndex !== fromIndex) {
+        const [moved] = tabs.splice(fromIndex, 1);
+        if (moved === undefined) {
+          throw new Error(`タブが見つかりません: ${tabId}`);
+        }
+        tabs.splice(toIndex, 0, moved);
+        tabs = tabs.map((tab, index) => ({ ...tab, index }));
+        tabEvents.onMoved.trigger(tabId, {
+          fromIndex,
+          toIndex,
+          windowId: moved.windowId,
+        });
+      }
+
+      const movedTab = tabs.find((tab) => tab.id === tabId);
+      if (movedTab === undefined) {
+        throw new Error(`タブが見つかりません: ${tabId}`);
+      }
+
+      return { ...movedTab };
     },
 
     async remove(tabId: number): Promise<void> {
@@ -197,8 +432,11 @@ export function installFakeChrome(): void {
     },
 
     async create(createProperties: chrome.tabs.CreateProperties): Promise<chrome.tabs.Tab> {
-      for (const tab of tabs) {
-        tab.active = false;
+      const active = createProperties.active !== false;
+      if (active) {
+        for (const tab of tabs) {
+          tab.active = false;
+        }
       }
 
       const tab = createFixtureTab({
@@ -206,15 +444,21 @@ export function installFakeChrome(): void {
         index: tabs.length,
         title: createProperties.url === undefined ? 'New Tab' : '',
         url: createProperties.url,
-        active: true,
+        active,
+        pinned: createProperties.pinned === true,
       });
       nextTabId += 1;
       tabs.push(tab);
+      reorderTabs();
 
-      tabEvents.onCreated.trigger(tab);
-      tabEvents.onActivated.trigger({ tabId: tab.id ?? -1, windowId: tab.windowId });
+      const created = tabs.find((item) => item.id === tab.id) ?? tab;
+      tabEvents.onCreated.trigger({ ...created });
 
-      return { ...tab };
+      if (created.active) {
+        tabEvents.onActivated.trigger({ tabId: created.id ?? -1, windowId: created.windowId });
+      }
+
+      return { ...created };
     },
 
     ...tabEvents,
@@ -228,6 +472,7 @@ export function installFakeChrome(): void {
       tabs: tabsApi,
       storage: {
         local,
+        session,
         onChanged: storageEvents,
       },
       runtime: {

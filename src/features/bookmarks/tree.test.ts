@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { flattenBookmarkTree, type BookmarkTreeNode } from './tree';
+import { buildBookmarkTree, type BookmarkTreeNode } from './tree';
 
 function folder(id: string, title: string, children: BookmarkTreeNode[] = []): BookmarkTreeNode {
   return { id, title, children };
@@ -11,8 +11,8 @@ function bookmark(id: string, title: string, url: string): BookmarkTreeNode {
 
 const collapsed = (...ids: string[]) => new Set(ids);
 
-describe('flattenBookmarkTree', () => {
-  it('Chrome の順序どおりにフォルダとブックマークを深さ付きで平坦化する', () => {
+describe('buildBookmarkTree', () => {
+  it('Chrome の順序どおりにフォルダとブックマークをネストして返す', () => {
     const tree = [
       folder('folder-1', '💬 Communicate', [
         bookmark('bookmark-1', 'Mail', 'https://mail.example.com/inbox'),
@@ -21,46 +21,80 @@ describe('flattenBookmarkTree', () => {
       bookmark('bookmark-3', 'Calendar', 'https://calendar.example.com/week'),
     ];
 
-    expect(flattenBookmarkTree(tree, collapsed())).toEqual([
-      { kind: 'folder', id: 'folder-1', title: '💬 Communicate', depth: 0, expanded: true },
+    expect(buildBookmarkTree(tree, collapsed(), '1')).toEqual([
       {
-        kind: 'bookmark',
-        id: 'bookmark-1',
-        title: 'Mail',
-        url: 'https://mail.example.com/inbox',
-        depth: 1,
+        kind: 'folder',
+        id: 'folder-1',
+        title: '💬 Communicate',
+        depth: 0,
+        parentId: '1',
+        index: 0,
+        expanded: true,
+        children: [
+          {
+            kind: 'bookmark',
+            id: 'bookmark-1',
+            title: 'Mail',
+            url: 'https://mail.example.com/inbox',
+            depth: 1,
+            parentId: 'folder-1',
+            index: 0,
+          },
+          {
+            kind: 'bookmark',
+            id: 'bookmark-2',
+            title: 'X',
+            url: 'https://x.com/',
+            depth: 1,
+            parentId: 'folder-1',
+            index: 1,
+          },
+        ],
       },
-      { kind: 'bookmark', id: 'bookmark-2', title: 'X', url: 'https://x.com/', depth: 1 },
       {
         kind: 'bookmark',
         id: 'bookmark-3',
         title: 'Calendar',
         url: 'https://calendar.example.com/week',
         depth: 0,
+        parentId: '1',
+        index: 1,
       },
     ]);
   });
 
-  it('保存状態がないフォルダは開いた状態で子項目を表示する', () => {
+  it('保存状態がないフォルダは開いた状態で返す', () => {
     const tree = [
       folder('folder-1', 'Communicate', [
         bookmark('bookmark-1', 'Mail', 'https://mail.example.com/inbox'),
       ]),
     ];
 
-    expect(flattenBookmarkTree(tree, collapsed())).toEqual([
-      { kind: 'folder', id: 'folder-1', title: 'Communicate', depth: 0, expanded: true },
+    expect(buildBookmarkTree(tree, collapsed(), '1')).toEqual([
       {
-        kind: 'bookmark',
-        id: 'bookmark-1',
-        title: 'Mail',
-        url: 'https://mail.example.com/inbox',
-        depth: 1,
+        kind: 'folder',
+        id: 'folder-1',
+        title: 'Communicate',
+        depth: 0,
+        parentId: '1',
+        index: 0,
+        expanded: true,
+        children: [
+          {
+            kind: 'bookmark',
+            id: 'bookmark-1',
+            title: 'Mail',
+            url: 'https://mail.example.com/inbox',
+            depth: 1,
+            parentId: 'folder-1',
+            index: 0,
+          },
+        ],
       },
     ]);
   });
 
-  it('閉じたフォルダ配下の子項目を表示しない', () => {
+  it('閉じたフォルダも子孫を保持し、expanded を false にする', () => {
     const tree = [
       folder('folder-1', 'Communicate', [
         bookmark('bookmark-1', 'Mail', 'https://mail.example.com/inbox'),
@@ -68,58 +102,95 @@ describe('flattenBookmarkTree', () => {
       bookmark('bookmark-2', 'Calendar', 'https://calendar.example.com/week'),
     ];
 
-    expect(flattenBookmarkTree(tree, collapsed('folder-1'))).toEqual([
-      { kind: 'folder', id: 'folder-1', title: 'Communicate', depth: 0, expanded: false },
+    expect(buildBookmarkTree(tree, collapsed('folder-1'), '1')).toEqual([
+      {
+        kind: 'folder',
+        id: 'folder-1',
+        title: 'Communicate',
+        depth: 0,
+        parentId: '1',
+        index: 0,
+        expanded: false,
+        children: [
+          {
+            kind: 'bookmark',
+            id: 'bookmark-1',
+            title: 'Mail',
+            url: 'https://mail.example.com/inbox',
+            depth: 1,
+            parentId: 'folder-1',
+            index: 0,
+          },
+        ],
+      },
       {
         kind: 'bookmark',
         id: 'bookmark-2',
         title: 'Calendar',
         url: 'https://calendar.example.com/week',
         depth: 0,
+        parentId: '1',
+        index: 1,
       },
     ]);
   });
 
-  it('入れ子のフォルダを再帰的に展開し、深さを増やす', () => {
+  it('入れ子のフォルダを再帰的にネストし、深さを増やす', () => {
     const tree = [
       folder('folder-1', 'Develop', [
         folder('folder-2', '🛠 Tools', [bookmark('bookmark-1', 'GitHub', 'https://github.com/')]),
       ]),
     ];
 
-    expect(flattenBookmarkTree(tree, collapsed())).toEqual([
-      { kind: 'folder', id: 'folder-1', title: 'Develop', depth: 0, expanded: true },
-      { kind: 'folder', id: 'folder-2', title: '🛠 Tools', depth: 1, expanded: true },
-      { kind: 'bookmark', id: 'bookmark-1', title: 'GitHub', url: 'https://github.com/', depth: 2 },
-    ]);
-  });
-
-  it('閉じた入れ子フォルダの子だけを隠し、兄弟は表示する', () => {
-    const tree = [
-      folder('folder-1', 'Develop', [
-        folder('folder-2', '🛠 Tools', [bookmark('bookmark-1', 'GitHub', 'https://github.com/')]),
-        bookmark('bookmark-2', 'Docs', 'https://developer.mozilla.org/'),
-      ]),
-    ];
-
-    expect(flattenBookmarkTree(tree, collapsed('folder-2'))).toEqual([
-      { kind: 'folder', id: 'folder-1', title: 'Develop', depth: 0, expanded: true },
-      { kind: 'folder', id: 'folder-2', title: '🛠 Tools', depth: 1, expanded: false },
+    expect(buildBookmarkTree(tree, collapsed(), '1')).toEqual([
       {
-        kind: 'bookmark',
-        id: 'bookmark-2',
-        title: 'Docs',
-        url: 'https://developer.mozilla.org/',
-        depth: 1,
+        kind: 'folder',
+        id: 'folder-1',
+        title: 'Develop',
+        depth: 0,
+        parentId: '1',
+        index: 0,
+        expanded: true,
+        children: [
+          {
+            kind: 'folder',
+            id: 'folder-2',
+            title: '🛠 Tools',
+            depth: 1,
+            parentId: 'folder-1',
+            index: 0,
+            expanded: true,
+            children: [
+              {
+                kind: 'bookmark',
+                id: 'bookmark-1',
+                title: 'GitHub',
+                url: 'https://github.com/',
+                depth: 2,
+                parentId: 'folder-2',
+                index: 0,
+              },
+            ],
+          },
+        ],
       },
     ]);
   });
 
-  it('空のフォルダはフォルダ行だけを返す', () => {
+  it('空のフォルダは children が空のフォルダ行を返す', () => {
     const tree = [folder('folder-1', 'Empty')];
 
-    expect(flattenBookmarkTree(tree, collapsed())).toEqual([
-      { kind: 'folder', id: 'folder-1', title: 'Empty', depth: 0, expanded: true },
+    expect(buildBookmarkTree(tree, collapsed(), '1')).toEqual([
+      {
+        kind: 'folder',
+        id: 'folder-1',
+        title: 'Empty',
+        depth: 0,
+        parentId: '1',
+        index: 0,
+        expanded: true,
+        children: [],
+      },
     ]);
   });
 });

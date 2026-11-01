@@ -7,6 +7,21 @@ export interface TitledTab {
   url?: string | undefined;
 }
 
+export type TabDropPosition = 'before' | 'after';
+
+/**
+ * タブを `targetIndex` の前後へ移動したときの、移動後のインデックスを返す。
+ * `sourceIndex` / `targetIndex` は移動前の一覧での位置を渡す。
+ */
+export function getReorderedTabIndex(
+  sourceIndex: number,
+  targetIndex: number,
+  position: TabDropPosition,
+): number {
+  const insertionIndex = targetIndex + (position === 'after' ? 1 : 0);
+  return sourceIndex < insertionIndex ? insertionIndex - 1 : insertionIndex;
+}
+
 /**
  * Chrome のタブストリップと同じ順序（index 昇順）に並べ替えた新しい配列を返す。
  */

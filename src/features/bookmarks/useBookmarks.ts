@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  BOOKMARK_BAR_ID,
   getBookmarkBarTree,
   getStoredValue,
   onBookmarksChanged,
@@ -10,10 +11,12 @@ import {
   parseCollapsedFolderIds,
   toggleCollapsedFolder,
 } from './folderState';
-import { flattenBookmarkTree, type BookmarkRowData, type BookmarkTreeNode } from './tree';
+import { buildBookmarkTree, type BookmarkRowData, type BookmarkTreeNode } from './tree';
 
 export interface UseBookmarksResult {
-  rows: BookmarkRowData[];
+  items: BookmarkRowData[];
+  /** ブックマークツリーの読み込みが終わったか。 */
+  ready: boolean;
   toggleFolder: (folderId: string) => void;
 }
 
@@ -76,10 +79,13 @@ export function useBookmarks(): UseBookmarksResult {
     [collapsedFolderIds],
   );
 
-  const rows = useMemo(
-    () => (tree === undefined ? [] : flattenBookmarkTree(tree, new Set(collapsedFolderIds))),
+  const items = useMemo(
+    () =>
+      tree === undefined
+        ? []
+        : buildBookmarkTree(tree, new Set(collapsedFolderIds), BOOKMARK_BAR_ID),
     [tree, collapsedFolderIds],
   );
 
-  return { rows, toggleFolder };
+  return { items, ready: tree !== undefined, toggleFolder };
 }

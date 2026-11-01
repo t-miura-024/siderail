@@ -1,6 +1,14 @@
 import type { Mock } from 'vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { onTabsChanged } from './tabs';
+import {
+  createPinnedTab,
+  getTab,
+  onTabsChanged,
+  pinTab,
+  resetTabUrl,
+  setTabMuted,
+  unpinTab,
+} from './tabs';
 
 type Listener = () => void;
 
@@ -92,5 +100,63 @@ describe('onTabsChanged', () => {
     for (const name of TAB_EVENT_NAMES) {
       expect(events[name].removeListener).toHaveBeenCalledWith(listener);
     }
+  });
+});
+
+describe('Pin 用のタブ操作', () => {
+  it('createPinnedTab はピン留めしてアクティブなタブを開く', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { create } });
+
+    await createPinnedTab('https://example.com/');
+
+    expect(create).toHaveBeenCalledWith({
+      url: 'https://example.com/',
+      pinned: true,
+      active: true,
+    });
+  });
+
+  it('pinTab は pinned: true を渡す', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { update } });
+
+    await pinTab(1);
+
+    expect(update).toHaveBeenCalledWith(1, { pinned: true });
+  });
+
+  it('unpinTab は pinned: false を渡す', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { update } });
+
+    await unpinTab(1);
+
+    expect(update).toHaveBeenCalledWith(1, { pinned: false });
+  });
+
+  it('resetTabUrl は URL を更新する', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { update } });
+
+    await resetTabUrl(1, 'https://example.com/');
+
+    expect(update).toHaveBeenCalledWith(1, { url: 'https://example.com/' });
+  });
+
+  it('setTabMuted はミュート状態を更新する', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { update } });
+
+    await setTabMuted(1, true);
+
+    expect(update).toHaveBeenCalledWith(1, { muted: true });
+  });
+
+  it('getTab は存在しないタブに対して undefined を返す', async () => {
+    const get = vi.fn().mockRejectedValue(new Error('not found'));
+    vi.stubGlobal('chrome', { tabs: { get } });
+
+    await expect(getTab(1)).resolves.toBeUndefined();
   });
 });

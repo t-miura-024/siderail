@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getTabTitle, sortTabs } from './tabs';
+import { getReorderedTabIndex, getTabTitle, sortTabs } from './tabs';
 
 describe('sortTabs', () => {
   it('index の昇順（Chrome のタブストリップ順）に並べ替える', () => {
@@ -21,6 +21,24 @@ describe('sortTabs', () => {
     sortTabs(tabs);
 
     expect(tabs.map((tab) => tab.id)).toEqual([2, 1]);
+  });
+});
+
+describe('getReorderedTabIndex', () => {
+  it('前方向への移動は、元の位置より前のぶんだけ詰めて返す', () => {
+    expect(getReorderedTabIndex(0, 2, 'before')).toBe(1);
+    expect(getReorderedTabIndex(0, 2, 'after')).toBe(2);
+  });
+
+  it('後ろ方向への移動は、対象の位置をそのまま使う', () => {
+    expect(getReorderedTabIndex(3, 1, 'before')).toBe(1);
+    expect(getReorderedTabIndex(3, 1, 'after')).toBe(2);
+  });
+
+  it('同じ位置への移動は元のインデックスを返す', () => {
+    expect(getReorderedTabIndex(1, 1, 'before')).toBe(1);
+    expect(getReorderedTabIndex(1, 1, 'after')).toBe(1);
+    expect(getReorderedTabIndex(0, 0, 'before')).toBe(0);
   });
 });
 

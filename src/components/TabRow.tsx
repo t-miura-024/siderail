@@ -1,35 +1,19 @@
-import { useState } from 'react';
+import type { PointerEvent } from 'react';
+import { useDragContext } from '@/features/drag/DragProvider';
 import { getTabTitle } from '@/features/tabs/tabs';
 import type { Tab } from '@/lib/chrome';
-import { activateTab, closeTab, getFaviconUrl } from '@/lib/chrome';
+import { activateTab, closeTab } from '@/lib/chrome';
+import { Favicon } from './Favicon';
 
 interface TabRowProps {
   tab: Tab;
+  targetId: string;
 }
 
-function TabFavicon({ pageUrl }: { pageUrl: string | undefined }) {
-  const [failed, setFailed] = useState(false);
-
-  if (pageUrl === undefined || failed) {
-    return (
-      <span aria-hidden="true" className="size-5 shrink-0 rounded-[4px] bg-sidebar-skeleton" />
-    );
-  }
-
-  return (
-    <img
-      src={getFaviconUrl(pageUrl)}
-      alt=""
-      className="size-5 shrink-0 object-contain"
-      onError={() => {
-        setFailed(true);
-      }}
-    />
-  );
-}
-
-export function TabRow({ tab }: TabRowProps) {
+export function TabRow({ tab, targetId }: TabRowProps) {
   const title = getTabTitle(tab);
+  const { source, beginPress } = useDragContext();
+  const isSourceDragging = source?.section === 'tab' && source.id === targetId;
 
   const handleActivate = () => {
     if (tab.id === undefined) {
@@ -51,20 +35,41 @@ export function TabRow({ tab }: TabRowProps) {
     });
   };
 
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (tab.url === undefined) {
+      return;
+    }
+
+    beginPress(
+      event,
+      { section: 'tab', id: targetId },
+      { kind: 'tab', tab: { id: tab.id, title, url: tab.url } },
+    );
+  };
+
   return (
-    <div className="group relative">
+    <div
+      className={['group relative', isSourceDragging ? 'hidden' : ''].join(' ')}
+      data-drop-section="tab"
+      data-drop-id={targetId}
+      data-drop-kind="tab"
+      data-tab-row-id={targetId}
+    >
       <button
         type="button"
         onClick={handleActivate}
+        onPointerDown={handlePointerDown}
         aria-current={tab.active ? 'page' : undefined}
         className={[
-          'flex h-[46px] w-full items-center gap-3 rounded-xl py-0 pr-9 pl-2 text-left text-[15px] transition-colors',
+          // × ボタンが表示されている間だけ、その行の右側に × の幅を確保する。
+          'flex h-8 w-full items-center gap-3 rounded-lg py-0 pr-2 pl-2 text-left text-[15px] transition-colors',
+          'group-hover:pr-9 group-has-[>button[data-tab-close]:focus-visible]:pr-9',
           tab.active
             ? 'bg-sidebar-active text-sidebar-text'
             : 'text-sidebar-text group-hover:bg-sidebar-hover',
         ].join(' ')}
       >
-        <TabFavicon key={tab.url} pageUrl={tab.url} />
+        <Favicon key={tab.url} url={tab.url} />
         <span className="min-w-0 truncate">{title}</span>
       </button>
       <button
@@ -72,7 +77,8 @@ export function TabRow({ tab }: TabRowProps) {
         onClick={handleClose}
         aria-label={`${title} を閉じる`}
         title="タブを閉じる"
-        className="pointer-events-none absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-base leading-none text-sidebar-muted opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 hover:text-sidebar-text"
+        data-tab-close
+        className="pointer-events-none absolute top-1/2 right-2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-2xl leading-none text-sidebar-muted opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 hover:text-sidebar-text"
       >
         ×
       </button>

@@ -11,7 +11,7 @@ export function NewTabRow() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex h-[46px] w-full items-center gap-3 rounded-xl px-2 text-left text-[15px] text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-text"
+      className="flex h-8 w-full items-center gap-3 rounded-lg px-2 text-left text-[15px] text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-text"
     >
       <span
         aria-hidden="true"
