@@ -16,8 +16,23 @@ export async function activateTab(tabId: number): Promise<void> {
   await chrome.tabs.update(tabId, { active: true });
 }
 
+/** Chrome が「すでに存在しないタブ」に対して返すエラーか。 */
+function isMissingTabError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith('No tab with id');
+}
+
+/**
+ * タブを閉じる。すでに閉じている場合は成功として扱う。
+ * 一覧の再取得前に × が押された場合など、閉じる操作とタブの消滅が競合するため。
+ */
 export async function closeTab(tabId: number): Promise<void> {
-  await chrome.tabs.remove(tabId);
+  try {
+    await chrome.tabs.remove(tabId);
+  } catch (error) {
+    if (!isMissingTabError(error)) {
+      throw error;
+    }
+  }
 }
 
 /** タブを現在のウィンドウ内の指定位置へ移動する。`index` は移動後の位置。 */

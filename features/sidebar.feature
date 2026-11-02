@@ -66,3 +66,8 @@ Feature: サイドバーの表示
     And ブックマーク "GitHub" の行の高さは40pxである
     And タブ "Google" の行の高さは40pxである
     And New Tab 行の高さは40pxである
+
+  Scenario: 設定ボタンから設定ページを開ける
+    When サイドパネルを開く
+    And 設定ボタンをクリックする
+    Then 設定ページが新しいタブで開く

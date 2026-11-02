@@ -480,6 +480,9 @@ export function installFakeChrome(): void {
         getURL(path: string): string {
           return new URL(path, window.location.origin).toString();
         },
+        async openOptionsPage(): Promise<void> {
+          window.open('/src/entrypoints/options/index.html', '_blank');
+        },
       },
     },
   });

@@ -1,6 +1,7 @@
 import type { Mock } from 'vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  closeTab,
   createBackgroundTab,
   createPinnedTab,
   getTab,
@@ -101,6 +102,32 @@ describe('onTabsChanged', () => {
     for (const name of TAB_EVENT_NAMES) {
       expect(events[name].removeListener).toHaveBeenCalledWith(listener);
     }
+  });
+});
+
+describe('closeTab', () => {
+  it('タブを閉じる', async () => {
+    const remove = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('chrome', { tabs: { remove } });
+
+    await closeTab(1);
+
+    expect(remove).toHaveBeenCalledWith(1);
+  });
+
+  it('すでに閉じているタブは成功として扱う', async () => {
+    const remove = vi.fn().mockRejectedValue(new Error('No tab with id: 1.'));
+    vi.stubGlobal('chrome', { tabs: { remove } });
+
+    await expect(closeTab(1)).resolves.toBeUndefined();
+  });
+
+  it('タブが存在しない以外のエラーはそのまま投げる', async () => {
+    const error = new Error('Tabs cannot be edited right now');
+    const remove = vi.fn().mockRejectedValue(error);
+    vi.stubGlobal('chrome', { tabs: { remove } });
+
+    await expect(closeTab(1)).rejects.toBe(error);
   });
 });
 

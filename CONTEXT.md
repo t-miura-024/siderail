@@ -21,8 +21,12 @@ Bookmark Section を Pinned、Tab Section を Today として扱う方式。ピ�
 _Avoid_: Arc 風モード
 
 **Options Page**（設定ページ）:
-Tab Management Mode を切り替える、サイドパネルとは独立したページ。Chrome の拡張機能ページから開く。
+Tab Management Mode を切り替える、サイドパネルとは独立したページ。Settings Button から開くほか、Chrome の拡張機能ページからも開ける。
 _Avoid_: 設定画面、ポップアップ
+
+**Settings Button**（設定ボタン）:
+サイドバー最上部のツールバー右端にある歯車。Options Page を新しいタブで開く。
+_Avoid_: ギア、設定アイコン
 
 **Sidebar**（サイドバー）:
 サイドパネルに描画される縦一覧全体。上段と下段の2セクションからなり、それぞれ独立してスクロールする。間の Divider をドラッグして高さの配分を変更できる。上段と下段の意味は Tab Management Mode によって変わる。
