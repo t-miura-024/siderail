@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildBookmarkTree, collectOpenPinIdsByFolder, type BookmarkTreeNode } from './tree';
+import {
+  buildBookmarkTree,
+  collectOpenPinIdsByFolder,
+  flattenBookmarkItems,
+  hasBookmarkItem,
+  type BookmarkTreeNode,
+} from './tree';
 
 function folder(id: string, title: string, children: BookmarkTreeNode[] = []): BookmarkTreeNode {
   return { id, title, children };
@@ -192,6 +198,50 @@ describe('buildBookmarkTree', () => {
         children: [],
       },
     ]);
+  });
+});
+
+describe('hasBookmarkItem', () => {
+  it('ネストしたフォルダの奥にあるブックマークも含めて判定する', () => {
+    const tree = buildBookmarkTree(
+      [
+        folder('folder-1', 'Develop', [
+          folder('folder-2', 'Tools', [bookmark('b-1', 'GitHub', 'https://github.com/')]),
+        ]),
+      ],
+      collapsed(),
+      '1',
+    );
+
+    expect(hasBookmarkItem(tree)).toBe(true);
+  });
+
+  it('空フォルダだけのときは false を返す', () => {
+    const tree = buildBookmarkTree(
+      [folder('folder-1', 'Develop', [folder('folder-2', 'Empty')])],
+      collapsed(),
+      '1',
+    );
+
+    expect(hasBookmarkItem(tree)).toBe(false);
+  });
+});
+
+describe('flattenBookmarkItems', () => {
+  it('フォルダ行を除き、子孫のブックマークをツリー順で返す', () => {
+    const tree = buildBookmarkTree(
+      [
+        folder('folder-1', 'Develop', [
+          bookmark('b-1', 'GitHub', 'https://github.com/'),
+          folder('folder-2', 'Tools', [bookmark('b-2', 'Figma', 'https://figma.com/')]),
+          bookmark('b-3', 'Jotter', 'https://jotter.example.com/'),
+        ]),
+      ],
+      collapsed(),
+      '1',
+    );
+
+    expect(flattenBookmarkItems(tree).map((row) => row.id)).toEqual(['b-1', 'b-2', 'b-3']);
   });
 });
 

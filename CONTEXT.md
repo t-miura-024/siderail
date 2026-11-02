@@ -68,13 +68,21 @@ _Avoid_: × ボタン
 フォルダ階層に応じて行要素全体を右へずらす量。1段16pxで、内容の左余白は10px固定。背景・ホバー・アクティブのピルも行要素と一緒に動く。Chrome 方式のブックマーク行にも適用する。
 _Avoid_: padding インデント
 
+**Row Height**（行の高さ）:
+サイドバーのすべての行の高さ。40px固定で、Pinned、Bookmark Section、Today、Tab Section、New Tab 行、Peek 行、Folder Preview の行を含む。ホバーしても高さは変わらない。
+_Avoid_: 行間、リストの高さ、32px
+
 **Peek**（peek 行）:
-折りたたみ中のフォルダの直下に、開いている子孫 Pin だけを表示した行。閉じている Pin は含めない。ネストしたフォルダ内の開いている Pin も含み、インデントは Pin 本来の深さに従って Row Indent で行要素ごとずれる。
+折りたたみ中のフォルダの直下に、開いている子孫 Pin だけを表示した行。閉じている Pin は含めない。ネストしたフォルダ内の開いている Pin も含み、インデントは Pin 本来の深さに従って Row Indent で行要素ごとずれる。Folder Preview がフォルダ全体を出すのに対し、Peek は常時見えるサマリとして開いている Pin だけを出す。
 _Avoid_: プレビュー行、展開行
 
 **Peeked Folder**（peek 中のフォルダ）:
 折りたたみ中で、開いている子孫 Pin を1つ以上持つフォルダ。三点入りフォルダアイコンで表示する。展開中や、開いている子孫がない折りたたみフォルダは通常のフォルダアイコンを使う。
 _Avoid_: 開いているフォルダ
+
+**Folder Preview**（フォルダプレビュー）:
+折りたたみ中のフォルダにマウスポインタを500ms置くと、そのフォルダ配下のすべての Pin / Bookmark をツリー順に平坦化して表示する、サイドパネル内の浮遊カード。行のクリックで開く・切り替えるだけを行い、×・ミュート・右クリック・ドラッグは持たない。空フォルダ、展開中のフォルダ、ドラッグ中、右クリックメニュー表示中は出さない。
+_Avoid_: フォルダポップアップ、ホバー展開、プレビュー行
 
 **Pinned Tab Map**（ピンとタブの対応）:
 Pin の Bookmark ID とライブタブ ID の対応。`chrome.storage.session` に保存し、タブが閉じるまで維持する。ブラウザ再起動後は URL が一致する Pin にだけ結び直す。
@@ -109,7 +117,7 @@ _Avoid_: ページ
 _Avoid_: 選択中タブ、カレントタブ
 
 **Folder**（フォルダ）:
-Bookmark Bar 配下のブックマークフォルダ。Chrome 方式では Bookmark Section で、Arc 方式では Pinned で開閉できる行として表示する。折りたたみ中に開いている子孫 Pin がある場合は Peeked Folder のアイコンになる。
+Bookmark Bar 配下のブックマークフォルダ。Chrome 方式では Bookmark Section で、Arc 方式では Pinned で開閉できる行として表示する。折りたたみ中に開いている子孫 Pin がある場合は Peeked Folder のアイコンになる。折りたたみ中はホバーで Folder Preview を出せる。
 _Avoid_: ディレクトリ、グループ
 
 **New Tab Row**（New Tab 行）:

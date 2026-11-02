@@ -7,7 +7,7 @@ interface DropPreviewProps {
   depth: number;
   payload: DragPayload;
   nodeRef?: Ref<HTMLDivElement> | undefined;
-  /** 行の高さクラス。Pinned では h-9、Chrome 方式では h-8。 */
+  /** 行の高さクラス。すべての行で h-10（40px）。 */
   heightClass?: string;
 }
 
@@ -18,7 +18,7 @@ interface DropPreviewProps {
  * ドラッグ自体は DragProvider が Pointer Events で処理するため、この要素は
  * 見た目だけを担当する（pointer-events-none）。
  */
-export function DropPreview({ depth, payload, nodeRef, heightClass = 'h-8' }: DropPreviewProps) {
+export function DropPreview({ depth, payload, nodeRef, heightClass = 'h-10' }: DropPreviewProps) {
   const item =
     payload.kind === 'tab' ? payload.tab : payload.kind === 'pin' ? payload.pin : payload.bookmark;
 

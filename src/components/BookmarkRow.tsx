@@ -29,10 +29,14 @@ interface BookmarkFolderRowProps {
   /** 折りたたみ中に開いている子孫ピンを peek 表示しているか。 */
   peeked?: boolean;
   dropSection?: TreeSection;
-  /** 行の高さクラス。Arc 方式の Pinned では h-9、Chrome 方式では h-8。 */
+  /** 行の高さクラス。すべての行で h-10（40px）。 */
   heightClass?: string;
   onToggle: () => void;
   onOpenContextMenu: (position: ContextMenuPosition) => void;
+  /** Folder Preview を出すためのホバー開始。 */
+  onPreviewEnter?: ((event: PointerEvent<HTMLButtonElement>) => void) | undefined;
+  /** Folder Preview を閉じるためのホバー終了。 */
+  onPreviewLeave?: (() => void) | undefined;
 }
 
 const ROW_CLASS_NAME =
@@ -137,7 +141,7 @@ export function BookmarkRow({
       data-bookmark-row-id={id}
       className={[
         ROW_CLASS_NAME,
-        'h-8',
+        'h-10',
         'gap-3 text-sidebar-text',
         isSourceDragging ? 'hidden' : '',
       ].join(' ')}
@@ -157,9 +161,11 @@ export function BookmarkFolderRow({
   isDropTarget,
   peeked = false,
   dropSection = 'bookmark',
-  heightClass = 'h-8',
+  heightClass = 'h-10',
   onToggle,
   onOpenContextMenu,
+  onPreviewEnter,
+  onPreviewLeave,
 }: BookmarkFolderRowProps) {
   return (
     <button
@@ -170,6 +176,8 @@ export function BookmarkFolderRow({
       onContextMenu={(event) => {
         openContextMenu(event, onOpenContextMenu);
       }}
+      onPointerEnter={onPreviewEnter}
+      onPointerLeave={onPreviewLeave}
       data-drop-section={dropSection}
       data-drop-id={id}
       data-drop-kind="folder"

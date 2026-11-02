@@ -51,7 +51,7 @@ export function TabRow({ tab, targetId }: TabRowProps) {
   return (
     <div
       className={[
-        'group relative flex h-8 rounded-xl transition-colors',
+        'group relative flex h-10 rounded-xl transition-colors',
         tab.active ? 'bg-sidebar-active' : 'hover:bg-sidebar-hover',
         isSourceDragging ? 'hidden' : '',
       ].join(' ')}
@@ -76,7 +76,7 @@ export function TabRow({ tab, targetId }: TabRowProps) {
         aria-label={`${title} を閉じる`}
         title="タブを閉じる"
         data-tab-close
-        className="flex h-full w-8 shrink-0 items-center justify-center rounded-r-xl text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10 hover:text-sidebar-text focus-visible:opacity-100 focus-visible:outline-none"
+        className="flex h-full w-10 shrink-0 items-center justify-center rounded-r-xl text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10 hover:text-sidebar-text focus-visible:opacity-100 focus-visible:outline-none"
       >
         <CloseIcon />
       </button>

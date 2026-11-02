@@ -96,6 +96,11 @@ export function findBookmarkRow(
   return undefined;
 }
 
+/** 行一覧に末端のブックマークが1件以上含まれるかを返す。空フォルダの判定に使う。 */
+export function hasBookmarkItem(items: readonly BookmarkRowData[]): boolean {
+  return items.some((row) => row.kind === 'bookmark' || hasBookmarkItem(row.children));
+}
+
 /** 開閉状態に関係なく、すべてのブックマーク行を平坦な配列で返す。 */
 export function flattenBookmarkItems(items: readonly BookmarkRowData[]): BookmarkItemRowData[] {
   const result: BookmarkItemRowData[] = [];

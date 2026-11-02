@@ -49,3 +49,20 @@ Feature: サイドバーの表示
     Given ブックマークバーにブックマークもフォルダもない
     When サイドパネルを開く
     Then タブ一覧が表示される
+
+  Scenario: Arc 方式の Today 行も40pxで表示される
+    Given タブ管理モードが "arc" である
+    And Today にタブ "GitHub" がある
+    When サイドパネルを開く
+    Then タブ "GitHub" の行の高さは40pxである
+
+  Scenario: Chrome 方式のブックマーク行・フォルダ行・タブ行・New Tab 行は40pxで表示される
+    Given タブ管理モードが "chrome" である
+    And ブックマークバーにフォルダ "Develop" がある
+    And フォルダ "Develop" にブックマーク "GitHub" がある
+    And 現在のウィンドウにタブ "Google" が開いている
+    When サイドパネルを開く
+    Then フォルダ "Develop" の行の高さは40pxである
+    And ブックマーク "GitHub" の行の高さは40pxである
+    And タブ "Google" の行の高さは40pxである
+    And New Tab 行の高さは40pxである

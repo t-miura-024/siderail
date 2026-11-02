@@ -89,11 +89,11 @@ export function TabSection({ tabs, mode, onUnpinPin }: TabSectionProps) {
             return (
               <Fragment key={tab.id ?? tab.index}>
                 {payload !== null && hasPreview(targetId, 'before') && (
-                  <div ref={spacerRef} aria-hidden="true" className="h-8 w-full" />
+                  <div ref={spacerRef} aria-hidden="true" className="h-10 w-full" />
                 )}
                 <TabRow tab={tab} targetId={targetId} />
                 {payload !== null && hasPreview(targetId, 'after') && (
-                  <div ref={spacerRef} aria-hidden="true" className="h-8 w-full" />
+                  <div ref={spacerRef} aria-hidden="true" className="h-10 w-full" />
                 )}
               </Fragment>
             );

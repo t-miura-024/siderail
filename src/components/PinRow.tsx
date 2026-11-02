@@ -47,7 +47,7 @@ function SpeakerIcon({ muted }: { muted: boolean }) {
 /**
  * Arc 方式の Pinned の行。ブックマークを実体とし、対応するライブタブがあれば状態を表示する。
  *
- * - 行の高さは 36px 固定。ホバーしても伸びない
+ * - 行の高さは 40px 固定。ホバーしても伸びない
  * - 閉じているピンは favicon とタイトルを暗くする
  * - ピン元と違う URL を表示しているタブは、favicon の横に `/` を出す
  * - favicon のホバーで `/` を消し、ピン元の favicon に切り替え、

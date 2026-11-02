@@ -10,6 +10,7 @@ import { BookmarkRow, type ContextMenuPosition } from './BookmarkRow';
 import { BookmarkToolbar } from './BookmarkToolbar';
 import { BookmarkTreeRows } from './BookmarkTreeRows';
 import { ContextMenu } from './ContextMenu';
+import { PreviewRow } from './FolderPreview';
 
 type ContextMenuState = (
   | { kind: 'folder'; folderId: string; title: string; expanded: boolean }
@@ -126,6 +127,7 @@ export function BookmarkSection() {
           label="ブックマーク"
           items={items}
           dropSection="bookmark"
+          contextMenuOpen={contextMenu !== null}
           onToggleFolder={toggleFolder}
           onOpenFolderContextMenu={(row, position) => {
             setContextMenu({
@@ -136,6 +138,16 @@ export function BookmarkSection() {
               expanded: row.expanded,
             });
           }}
+          renderPreviewLeaf={(row, closePreview) => (
+            <PreviewRow
+              title={row.title}
+              url={row.url}
+              onClick={() => {
+                closePreview();
+                void openBookmarkUrl(row.url).catch(reportOpenError);
+              }}
+            />
+          )}
           renderLeaf={(row) => (
             <BookmarkRow
               id={row.id}

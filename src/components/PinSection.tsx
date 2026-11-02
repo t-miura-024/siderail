@@ -25,6 +25,7 @@ import { BookmarkDialog, type BookmarkDialogRequest } from './BookmarkDialog';
 import { BookmarkToolbar } from './BookmarkToolbar';
 import { BookmarkTreeRows } from './BookmarkTreeRows';
 import { ContextMenu, type ContextMenuAction } from './ContextMenu';
+import { PreviewRow } from './FolderPreview';
 import { PinRow } from './PinRow';
 import { UnmappedPinRow } from './UnmappedPinRow';
 
@@ -151,17 +152,21 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
     setContextMenu(null);
   };
 
+  const activatePin = (row: BookmarkItemRowData, liveTab: Tab | undefined) => {
+    if (liveTab?.id !== undefined) {
+      void activateTab(liveTab.id).catch(reportError('タブを切り替えられませんでした'));
+      return;
+    }
+    void pins.openPin(row).catch(reportError('ピンを開けませんでした'));
+  };
+
   const renderPin = (row: BookmarkItemRowData) => {
     const liveTab = pins.liveByBookmarkId.get(row.id);
     const canReset =
       liveTab?.url !== undefined && normalizeUrl(liveTab.url) !== normalizeUrl(row.url);
 
     const activate = () => {
-      if (liveTab?.id !== undefined) {
-        void activateTab(liveTab.id).catch(reportError('タブを切り替えられませんでした'));
-        return;
-      }
-      void pins.openPin(row).catch(reportError('ピンを開けませんでした'));
+      activatePin(row, liveTab);
     };
 
     const handleFaviconClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -335,12 +340,29 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
           items={items}
           dropSection="pin"
           footer={footer}
+          contextMenuOpen={contextMenu !== null}
           peekRowsByFolderId={peekRowsByFolderId}
           onToggleFolder={onToggleFolder}
           onOpenFolderContextMenu={(row, position) => {
             setContextMenu({ kind: 'folder', row, ...position });
           }}
           renderLeaf={renderPin}
+          renderPreviewLeaf={(row, closePreview) => {
+            const liveTab = pins.liveByBookmarkId.get(row.id);
+            return (
+              <PreviewRow
+                title={row.title}
+                url={row.url}
+                liveTabUrl={liveTab?.url}
+                isOpen={liveTab !== undefined}
+                isActive={liveTab?.active === true}
+                onClick={() => {
+                  closePreview();
+                  activatePin(row, liveTab);
+                }}
+              />
+            );
+          }}
         />
       </div>
 
