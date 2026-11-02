@@ -42,6 +42,11 @@ Feature: タブ一覧の操作
     When "+ New Tab" をクリックする
     Then 新しいタブが開き、アクティブになる
 
+  Scenario: New Tab で開いたタブが表示領域内に入る
+    Given タブ一覧が表示領域より長くスクロールできる
+    When "+ New Tab" をクリックする
+    Then 新しいタブの行が表示領域内に収まる位置までスクロールされる
+
   Scenario: 開いていないブックマークは新しいタブで開く
     Given ブックマークバーにブックマーク "Mail" がある
     And ブックマーク "Mail" の URL が "https://mail.example.com/inbox" である

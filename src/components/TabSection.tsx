@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useDragContext } from '@/features/drag/DragProvider';
 import { useDropPreviewGlide } from '@/features/drag/useDropPreviewGlide';
 import { useRowGlide } from '@/features/drag/useRowGlide';
@@ -20,10 +20,30 @@ interface TabSectionProps {
 export function TabSection({ tabs, mode, onUnpinPin }: TabSectionProps) {
   const { payload, preview, setDropHandler } = useDragContext();
   const sectionRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { ghostRef, spacerRef } = useDropPreviewGlide(sectionRef);
+  const [scrollTargetId, setScrollTargetId] = useState<number | null>(null);
 
   // Arc 方式ではピン留めタブを Pinned 側に任せ、Today には出さない。
   const visibleTabs = mode === 'arc' ? tabs.filter((tab) => !tab.pinned) : tabs;
+
+  // New Tab で開いたタブの行が描画されたら、表示領域内へスクロールする。
+  useEffect(() => {
+    if (scrollTargetId === null) {
+      return;
+    }
+
+    const row = scrollRef.current?.querySelector<HTMLElement>(
+      `[data-tab-row-id="${scrollTargetId}"]`,
+    );
+    if (row == null) {
+      return;
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    row.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+    setScrollTargetId(null);
+  }, [scrollTargetId, visibleTabs]);
 
   useRowGlide({
     scopeRef: sectionRef,
@@ -75,9 +95,12 @@ export function TabSection({ tabs, mode, onUnpinPin }: TabSectionProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-1.5 pt-2 pb-1">
-        <NewTabRow />
+        <NewTabRow onCreated={setScrollTargetId} />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 pb-1.5">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 pb-1.5"
+      >
         <section
           ref={sectionRef}
           aria-label={mode === 'arc' ? '今日のタブ' : 'タブ'}

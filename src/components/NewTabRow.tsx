@@ -1,10 +1,20 @@
 import { createTab } from '@/lib/chrome';
 
-export function NewTabRow() {
+interface NewTabRowProps {
+  onCreated: (tabId: number) => void;
+}
+
+export function NewTabRow({ onCreated }: NewTabRowProps) {
   const handleClick = () => {
-    createTab().catch((error: unknown) => {
-      console.error('新しいタブを開けませんでした', error);
-    });
+    createTab()
+      .then((tab) => {
+        if (tab.id !== undefined) {
+          onCreated(tab.id);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('新しいタブを開けませんでした', error);
+      });
   };
 
   return (
