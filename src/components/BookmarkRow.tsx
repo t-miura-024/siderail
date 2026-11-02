@@ -1,3 +1,4 @@
+import { Folder, FolderOpen } from 'lucide-react';
 import type { MouseEvent, PointerEvent } from 'react';
 import { useDragContext } from '@/features/drag/DragProvider';
 import { Favicon } from './Favicon';
@@ -71,38 +72,17 @@ export function openContextMenu(
 }
 
 function FolderIcon({ expanded, peeked }: { expanded: boolean; peeked: boolean }) {
+  const Icon = expanded ? FolderOpen : Folder;
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      className="size-5 shrink-0"
-    >
-      {expanded ? (
-        <path
-          d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : (
+    <Icon aria-hidden="true" strokeWidth={1.5} className="size-5 shrink-0">
+      {!expanded && peeked && (
         <>
-          <path
-            d="M2.5 6.5a2 2 0 0 1 2-2h4.2l2 2h8.8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {peeked && (
-            <>
-              <circle cx="7.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
-              <circle cx="12" cy="13" r="1.1" fill="currentColor" stroke="none" />
-              <circle cx="16.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
-            </>
-          )}
+          <circle cx="7.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="13" r="1.1" fill="currentColor" stroke="none" />
+          <circle cx="16.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
         </>
       )}
-    </svg>
+    </Icon>
   );
 }
 

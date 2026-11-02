@@ -3,6 +3,7 @@ import { getTabTitle } from '@/features/tabs/tabs';
 import { openContextMenu, ROW_HORIZONTAL_PADDING, type ContextMenuPosition } from './BookmarkRow';
 import { CloseIcon } from './CloseIcon';
 import { Favicon } from './Favicon';
+import { SpeakerIcon } from './SpeakerIcon';
 
 interface UnmappedPinRowProps {
   tab: Tab;
@@ -14,29 +15,6 @@ interface UnmappedPinRowProps {
 
 const ACTION_BUTTON_CLASS_NAME =
   'flex size-7 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:text-sidebar-text';
-
-function SpeakerIcon({ muted }: { muted: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      className="size-4"
-    >
-      <path d="M11 5 6 9H3v6h3l5 4V5Z" strokeLinecap="round" strokeLinejoin="round" />
-      {muted ? (
-        <path d="m16 9 5 6M21 9l-5 6" strokeLinecap="round" strokeLinejoin="round" />
-      ) : (
-        <>
-          <path d="M15.5 8.5a5 5 0 0 1 0 7" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M18.5 6a9 9 0 0 1 0 12" strokeLinecap="round" strokeLinejoin="round" />
-        </>
-      )}
-    </svg>
-  );
-}
 
 /**
  * Chrome 側でピン留めされたまま、対応するブックマークがない行。

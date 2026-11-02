@@ -70,8 +70,11 @@ pnpm test         # vitest
 
 ## アイコン
 
-`public/icon/source.svg` が原本。各サイズの PNG を再生成する:
+拡張機能のアイコンは `public/icon/source.svg` が原本。各サイズの PNG を再生成する:
 
 ```bash
 pnpm icons
 ```
+
+サイドバー内のアイコンは [lucide-react](https://lucide.dev/)（ISC ライセンス）を使う。
+
