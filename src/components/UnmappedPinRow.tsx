@@ -1,6 +1,7 @@
 import type { Tab } from '@/lib/chrome';
 import { getTabTitle } from '@/features/tabs/tabs';
-import { openContextMenu, type ContextMenuPosition } from './BookmarkRow';
+import { openContextMenu, ROW_HORIZONTAL_PADDING, type ContextMenuPosition } from './BookmarkRow';
+import { CloseIcon } from './CloseIcon';
 import { Favicon } from './Favicon';
 
 interface UnmappedPinRowProps {
@@ -55,10 +56,10 @@ export function UnmappedPinRow({
   return (
     <div
       className={[
-        'group relative flex h-8 w-full items-center gap-3 rounded-lg pr-2 text-[15px] transition-colors',
+        'group relative flex h-10 w-full items-center gap-3 rounded-xl pr-2 text-[15px] transition-colors',
         tab.active ? 'bg-sidebar-active' : 'hover:bg-sidebar-hover',
       ].join(' ')}
-      style={{ paddingLeft: '8px' }}
+      style={{ paddingLeft: `${ROW_HORIZONTAL_PADDING}px` }}
       onContextMenu={(event) => {
         openContextMenu(event, onOpenContextMenu);
       }}
@@ -97,10 +98,10 @@ export function UnmappedPinRow({
           title="タブを閉じる"
           className={[
             ACTION_BUTTON_CLASS_NAME,
-            'pointer-events-none text-2xl leading-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
+            'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
           ].join(' ')}
         >
-          ×
+          <CloseIcon />
         </button>
       </div>
     </div>

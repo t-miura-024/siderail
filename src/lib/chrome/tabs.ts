@@ -34,6 +34,11 @@ export async function createPinnedTab(url: string): Promise<Tab> {
   return chrome.tabs.create({ url, pinned: true, active: true });
 }
 
+/** 現在のタブを切り替えずに、指定した URL を通常タブとして開く。 */
+export async function createBackgroundTab(url: string): Promise<Tab> {
+  return chrome.tabs.create({ url, active: false });
+}
+
 /** タブをピン留めする。Chrome のタブストリップ上ではピン留め領域の末尾へ移動する。 */
 export async function pinTab(tabId: number): Promise<void> {
   await chrome.tabs.update(tabId, { pinned: true });

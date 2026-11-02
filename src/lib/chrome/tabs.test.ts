@@ -1,6 +1,7 @@
 import type { Mock } from 'vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  createBackgroundTab,
   createPinnedTab,
   getTab,
   onTabsChanged,
@@ -115,6 +116,15 @@ describe('Pin 用のタブ操作', () => {
       pinned: true,
       active: true,
     });
+  });
+
+  it('createBackgroundTab はアクティブにしないタブを開く', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 1 });
+    vi.stubGlobal('chrome', { tabs: { create } });
+
+    await createBackgroundTab('https://example.com/');
+
+    expect(create).toHaveBeenCalledWith({ url: 'https://example.com/', active: false });
   });
 
   it('pinTab は pinned: true を渡す', async () => {

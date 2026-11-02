@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import {
+  collectOpenPinIdsByFolder,
   findBookmarkRow,
+  flattenBookmarkItems,
   type BookmarkFolderRowData,
   type BookmarkItemRowData,
   type BookmarkRowData,
@@ -9,6 +11,7 @@ import type { ContextMenuPosition } from '@/components/BookmarkRow';
 import { useDragContext } from '@/features/drag/DragProvider';
 import type { DraggedPin, DropPosition } from '@/features/drag/types';
 import type { UsePinsResult } from '@/features/pins/usePins';
+import { useModifierKey } from '@/features/pins/useModifierKey';
 import {
   BOOKMARK_BAR_ID,
   activateTab,
@@ -53,6 +56,7 @@ function reportError(message: string): (error: unknown) => void {
 export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionProps) {
   const [contextMenu, setContextMenu] = useState<PinMenuState | null>(null);
   const [dialog, setDialog] = useState<BookmarkDialogRequest | null>(null);
+  const modifierHeld = useModifierKey();
   const { setDropHandler } = useDragContext();
 
   useEffect(() => {
@@ -110,6 +114,34 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
     };
   }, [items, pins, onToggleFolder, setDropHandler]);
 
+  const rowById = useMemo(() => {
+    const map = new Map<string, BookmarkItemRowData>();
+    for (const row of flattenBookmarkItems(items)) {
+      map.set(row.id, row);
+    }
+    return map;
+  }, [items]);
+
+  const peekRowsByFolderId = useMemo(() => {
+    const openIdsByFolder = collectOpenPinIdsByFolder(items, (bookmarkId) =>
+      pins.liveByBookmarkId.has(bookmarkId),
+    );
+    const result = new Map<string, BookmarkItemRowData[]>();
+
+    for (const [folderId, ids] of openIdsByFolder) {
+      const rows: BookmarkItemRowData[] = [];
+      for (const id of ids) {
+        const row = rowById.get(id);
+        if (row !== undefined) {
+          rows.push(row);
+        }
+      }
+      result.set(folderId, rows);
+    }
+
+    return result;
+  }, [items, pins.liveByBookmarkId, rowById]);
+
   const openDialog = (request: BookmarkDialogRequest) => {
     setDialog(request);
     setContextMenu(null);
@@ -122,7 +154,7 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
   const renderPin = (row: BookmarkItemRowData) => {
     const liveTab = pins.liveByBookmarkId.get(row.id);
     const canReset =
-      liveTab !== undefined && normalizeUrl(liveTab.url ?? '') !== normalizeUrl(row.url);
+      liveTab?.url !== undefined && normalizeUrl(liveTab.url) !== normalizeUrl(row.url);
 
     const activate = () => {
       if (liveTab?.id !== undefined) {
@@ -132,12 +164,18 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
       void pins.openPin(row).catch(reportError('ピンを開けませんでした'));
     };
 
-    const handleFaviconClick = () => {
+    const handleFaviconClick = (event: MouseEvent<HTMLButtonElement>) => {
       if (liveTab?.id === undefined) {
         void pins.openPin(row).catch(reportError('ピンを開けませんでした'));
         return;
       }
       if (canReset) {
+        if (event.metaKey || event.ctrlKey) {
+          void pins
+            .separatePin(liveTab.id, row.url)
+            .catch(reportError('ピンを切り離せませんでした'));
+          return;
+        }
         void pins
           .resetPin(liveTab.id, row.url)
           .catch(reportError('ピン元の URL に戻せませんでした'));
@@ -151,6 +189,7 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
         row={row}
         liveTab={liveTab}
         canReset={canReset}
+        modifierHeld={modifierHeld}
         onActivate={activate}
         onFaviconClick={handleFaviconClick}
         onClose={() => {
@@ -231,7 +270,10 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
             const tabId = pinMenu.liveTab.id;
             const muted = pinMenu.liveTab.mutedInfo?.muted === true;
 
-            if (normalizeUrl(pinMenu.liveTab.url ?? '') !== normalizeUrl(pinMenu.row.url)) {
+            if (
+              pinMenu.liveTab.url !== undefined &&
+              normalizeUrl(pinMenu.liveTab.url) !== normalizeUrl(pinMenu.row.url)
+            ) {
               actions.push({
                 label: 'ピン元の URL に戻す',
                 onSelect: () => {
@@ -293,6 +335,7 @@ export function PinSection({ items, pins, onToggleFolder, onUnpin }: PinSectionP
           items={items}
           dropSection="pin"
           footer={footer}
+          peekRowsByFolderId={peekRowsByFolderId}
           onToggleFolder={onToggleFolder}
           onOpenFolderContextMenu={(row, position) => {
             setContextMenu({ kind: 'folder', row, ...position });

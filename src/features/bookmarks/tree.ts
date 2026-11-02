@@ -113,3 +113,40 @@ export function flattenBookmarkItems(items: readonly BookmarkRowData[]): Bookmar
   walk(items);
   return result;
 }
+
+/**
+ * フォルダごとに、開いている子孫ピンの ID をツリー順で集める。
+ *
+ * ネストしたフォルダのピンも含み、そのフォルダの直下に平坦に並べられる順序で返す。
+ * 開いている子孫が1つもないフォルダは結果に含めない。
+ */
+export function collectOpenPinIdsByFolder(
+  items: readonly BookmarkRowData[],
+  isOpen: (bookmarkId: string) => boolean,
+): Map<string, readonly string[]> {
+  const result = new Map<string, readonly string[]>();
+
+  const collect = (rows: readonly BookmarkRowData[]): string[] => {
+    const openIds: string[] = [];
+
+    for (const row of rows) {
+      if (row.kind === 'bookmark') {
+        if (isOpen(row.id)) {
+          openIds.push(row.id);
+        }
+        continue;
+      }
+
+      const childOpenIds = collect(row.children);
+      if (childOpenIds.length > 0) {
+        result.set(row.id, childOpenIds);
+      }
+      openIds.push(...childOpenIds);
+    }
+
+    return openIds;
+  };
+
+  collect(items);
+  return result;
+}

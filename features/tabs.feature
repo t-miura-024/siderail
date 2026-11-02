@@ -33,6 +33,11 @@ Feature: タブ一覧の操作
     And 現れた "×" をクリックする
     Then タブ "Google" が閉じる
 
+  Scenario: タブ行の右端のセグメント全体でタブを閉じる
+    Given 現在のウィンドウにタブ "Google" が開いている
+    When タブ "Google" の行の右端（× の右余白）をクリックする
+    Then タブ "Google" が閉じる
+
   Scenario: New Tab で新しいタブが開く
     When "+ New Tab" をクリックする
     Then 新しいタブが開き、アクティブになる

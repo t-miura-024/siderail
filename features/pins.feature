@@ -74,3 +74,104 @@ Feature: Arc 方式のタブ管理
     When ピン "Music" の行にスピーカーアイコンが表示される
     And スピーカーアイコンをクリックする
     Then そのタブがミュートされる
+
+  Scenario: 閉じているピンは暗く表示される
+    Given Pinned にピン "Mail" がある
+    And ピン "Mail" に対応するライブタブがない
+    When サイドパネルを開く
+    Then ピン "Mail" の favicon とタイトルが暗く表示される
+
+  Scenario: 開いているピンは通常の明るさで表示される
+    Given Pinned にピン "Mail" があり、ライブタブが開いている
+    And ピン "Mail" のライブタブはアクティブではない
+    When サイドパネルを開く
+    Then ピン "Mail" は暗く表示されない
+
+  Scenario: 閉じているピンはホバーで明るくなる
+    Given Pinned にピン "Mail" があり、ライブタブがない
+    When ピン "Mail" の行にホバーする
+    Then ピン "Mail" の favicon とタイトルが通常の明るさになる
+
+  Scenario: ピン元と違う URL を表示しているピンは現在のサイトの favicon になる
+    Given Pinned にピン "Mail" があり、ライブタブが開いている
+    And そのタブが "https://example.com/" を表示している
+    When サイドパネルを開く
+    Then ピン "Mail" の favicon が "https://example.com/" のものになる
+    And ピン "Mail" のタイトルは "Mail" のままである
+
+  Scenario: 遷移したピンの favicon はホバーでピン元に切り替わる
+    Given Pinned にピン "Mail" があり、ライブタブが "https://example.com/" を表示している
+    When ピン "Mail" の favicon 側の左セグメントにホバーする
+    Then favicon がピン元の URL のものにクロスフェードする
+    And タイトルの左位置はホバー前後で変わらない
+    And favicon と操作ボタンは上下に動かない
+    And タイトルだけが少し上へ寄る
+    And タイトルの下に "ピン元の URL に戻す" が表示される
+    And 行の高さは40pxのまま変わらない
+    And セグメントをクリックするとピン元の URL に戻る
+
+  Scenario: favicon 側の左セグメント全体がリセットボタンになる
+    Given ピン "Mail" のライブタブが "https://example.com/" を表示している
+    When ピン "Mail" の行の左端（favicon の左余白）をクリックする
+    Then ピンのライブタブがピン元の URL に戻る
+
+  Scenario: 右セグメント全体が閉じるボタンになる
+    Given Pinned にピン "Mail" があり、ライブタブが開いている
+    When ピン "Mail" の行の右端（× の右余白）をクリックする
+    Then "Mail" のタブが閉じる
+    And Pinned にピン "Mail" が残る
+
+  Scenario: フォルダ配下の行は行要素全体がインデントされる
+    Given Pinned のフォルダ "test1" の中にフォルダ "test1-1" がある
+    When サイドパネルを開く
+    Then フォルダ "test1" の行は左端から0pxの位置から始まる
+    And フォルダ "test1-1" の行は左端から16pxの位置から始まる
+    And 行のホバー背景とアクティブのピルも行要素と同じ位置から始まる
+    And 内容の左余白は10pxで一定である
+
+  Scenario: 修飾キーを押しながらホバーすると切り離しの案内に変わる
+    Given ピン "Mail" のライブタブが "https://example.com/" を表示している
+    When ピン "Mail" の favicon にホバーし、⌘ または Ctrl を押す
+    Then サブタイトルが "ピンから切り離す" に変わる
+
+  Scenario: 修飾キーを押しながら favicon をクリックすると切り離される
+    Given ピン "Mail" のライブタブが "https://example.com/" を表示している
+    When ピン "Mail" の favicon を ⌘ または Ctrl を押しながらクリックする
+    Then "https://example.com/" がピン留めされていない通常タブとして Today に開く
+    And ピン "Mail" のライブタブはピン元の URL に戻る
+    And ピン "Mail" の "/" が消える
+
+  Scenario: 折りたたみフォルダの開いているピンが peek 行として表示される
+    Given Pinned のフォルダ "Communicate" にピン "Mail" とピン "X" がある
+    And ピン "Mail" のライブタブだけが開いている
+    When フォルダ "Communicate" を閉じる
+    Then フォルダ "Communicate" の直下にピン "Mail" が peek 行として表示される
+    And ピン "X" は表示されない
+    And フォルダ "Communicate" のアイコンが三点入りフォルダになる
+
+  Scenario: peek 行はツリー順で、ピン本来の深さにインデントされる
+    Given Pinned のフォルダ "Communicate" にピン "Mail"、ピン "X"、ピン "Slack" がこの順である
+    And ピン "Mail" とピン "Slack" のライブタブが開いている
+    When フォルダ "Communicate" を閉じる
+    Then peek 行は "Mail"、"Slack" の順で表示される
+    And peek 行の行要素はピン本来の深さに応じて右へずれる
+
+  Scenario: ネストしたフォルダ内の開いているピンは本来の深さで表示される
+    Given Pinned のフォルダ "Tools" の中にフォルダ "Design" があり、その中にピン "Figma" がある
+    And ピン "Figma" のライブタブが開いている
+    When フォルダ "Tools" を閉じる
+    Then フォルダ "Tools" の直下にピン "Figma" が peek 行として表示される
+    And ピン "Figma" は2段目の深さにインデントされる
+    And フォルダ "Design" は表示されない
+
+  Scenario: 開いているピンがなくなると peek 表示が消える
+    Given フォルダ "Communicate" が閉じていて、ピン "Mail" が peek 行として表示されている
+    When ピン "Mail" のライブタブを閉じる
+    Then フォルダ "Communicate" の下から peek 行が消える
+    And フォルダ "Communicate" のアイコンが通常の折りたたみフォルダに戻る
+
+  Scenario: フォルダを展開すると peek 行は通常の子行になる
+    Given フォルダ "Communicate" が閉じていて、ピン "Mail" が peek 行として表示されている
+    When フォルダ "Communicate" を開く
+    Then peek 行は表示されなくなる
+    And ピン "Mail" はフォルダの通常の子行として表示される

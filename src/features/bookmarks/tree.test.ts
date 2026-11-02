@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBookmarkTree, type BookmarkTreeNode } from './tree';
+import { buildBookmarkTree, collectOpenPinIdsByFolder, type BookmarkTreeNode } from './tree';
 
 function folder(id: string, title: string, children: BookmarkTreeNode[] = []): BookmarkTreeNode {
   return { id, title, children };
@@ -192,5 +192,42 @@ describe('buildBookmarkTree', () => {
         children: [],
       },
     ]);
+  });
+});
+
+describe('collectOpenPinIdsByFolder', () => {
+  const tree = buildBookmarkTree(
+    [
+      folder('folder-1', 'Communicate', [
+        bookmark('bookmark-1', 'Mail', 'https://mail.example.com/'),
+        bookmark('bookmark-2', 'X', 'https://x.com/'),
+        folder('folder-2', 'Nested', [bookmark('bookmark-3', 'Slack', 'https://app.slack.com/')]),
+      ]),
+      bookmark('bookmark-4', 'Calendar', 'https://calendar.example.com/'),
+    ],
+    collapsed(),
+    '1',
+  );
+
+  it('開いている子孫ピンをツリー順で集める', () => {
+    const open = new Set(['bookmark-1', 'bookmark-3', 'bookmark-4']);
+    const result = collectOpenPinIdsByFolder(tree, (id) => open.has(id));
+
+    expect(result.get('folder-1')).toEqual(['bookmark-1', 'bookmark-3']);
+    expect(result.get('folder-2')).toEqual(['bookmark-3']);
+  });
+
+  it('開いている子孫がないフォルダは含めない', () => {
+    const result = collectOpenPinIdsByFolder(tree, () => false);
+
+    expect(result.size).toBe(0);
+  });
+
+  it('ネストしたフォルダのピンも親フォルダに平坦化して含める', () => {
+    const open = new Set(['bookmark-3']);
+    const result = collectOpenPinIdsByFolder(tree, (id) => open.has(id));
+
+    expect(result.get('folder-1')).toEqual(['bookmark-3']);
+    expect(result.get('folder-2')).toEqual(['bookmark-3']);
   });
 });

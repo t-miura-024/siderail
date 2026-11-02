@@ -4,6 +4,7 @@ import type { DraggedPin } from '@/features/drag/types';
 import {
   BOOKMARK_BAR_ID,
   closeTab,
+  createBackgroundTab,
   createBookmark,
   createPinnedTab,
   getSessionValue,
@@ -36,6 +37,8 @@ export interface UsePinsResult {
   openPin: (bookmark: BookmarkItemRowData) => Promise<void>;
   closePin: (bookmarkId: string, tabId: number) => Promise<void>;
   resetPin: (tabId: number, url: string) => Promise<void>;
+  /** 現在のページを通常タブとして切り離し、ピン本体をピン元の URL に戻す。 */
+  separatePin: (tabId: number, pinnedUrl: string) => Promise<void>;
   toggleMute: (tabId: number, muted: boolean) => Promise<void>;
   pinTabToBookmark: (bookmarkId: string, tabId: number) => Promise<void>;
   /** ピン解除。ブックマークを削除し、タブは Today に残す。 */
@@ -146,6 +149,16 @@ export function usePins(
     await resetTabUrl(tabId, url);
   }, []);
 
+  const separatePin = useCallback(async (tabId: number, pinnedUrl: string) => {
+    const tab = await getTab(tabId);
+    if (tab?.url === undefined) {
+      return;
+    }
+
+    await createBackgroundTab(tab.url);
+    await resetTabUrl(tabId, pinnedUrl);
+  }, []);
+
   const toggleMute = useCallback(async (tabId: number, muted: boolean) => {
     await setTabMuted(tabId, muted);
   }, []);
@@ -228,6 +241,7 @@ export function usePins(
       openPin,
       closePin,
       resetPin,
+      separatePin,
       toggleMute,
       pinTabToBookmark,
       unpinPin,
@@ -239,6 +253,7 @@ export function usePins(
       openPin,
       closePin,
       resetPin,
+      separatePin,
       toggleMute,
       pinTabToBookmark,
       unpinPin,

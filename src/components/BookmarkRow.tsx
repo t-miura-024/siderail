@@ -26,13 +26,17 @@ interface BookmarkFolderRowProps {
   depth: number;
   expanded: boolean;
   isDropTarget: boolean;
+  /** 折りたたみ中に開いている子孫ピンを peek 表示しているか。 */
+  peeked?: boolean;
   dropSection?: TreeSection;
+  /** 行の高さクラス。Arc 方式の Pinned では h-9、Chrome 方式では h-8。 */
+  heightClass?: string;
   onToggle: () => void;
   onOpenContextMenu: (position: ContextMenuPosition) => void;
 }
 
 const ROW_CLASS_NAME =
-  'relative flex h-8 w-full items-center rounded-lg pr-2 text-left text-[15px] transition-colors hover:bg-sidebar-hover';
+  'relative flex items-center rounded-xl pr-2 text-left text-[15px] transition-colors hover:bg-sidebar-hover';
 
 const FOLDER_DROP_CLASS_NAME = 'bg-sidebar-hover ring-1 ring-inset ring-sidebar-muted/50';
 
@@ -41,8 +45,17 @@ const DROP_DATA_ATTRIBUTES = {
   'data-drop-kind': 'bookmark',
 } as const;
 
-export function rowStyle(depth: number): { paddingLeft: string } {
-  return { paddingLeft: `${8 + depth * 24}px` };
+/** 1段あたりのインデント幅。行要素そのものを右へずらす。 */
+export const ROW_INDENT_STEP = 16;
+
+/** 行要素の左端から内容までの余白。 */
+export const ROW_HORIZONTAL_PADDING = 10;
+
+export function rowStyle(depth: number): { marginLeft: string; paddingLeft: string } {
+  return {
+    marginLeft: `${depth * ROW_INDENT_STEP}px`,
+    paddingLeft: `${ROW_HORIZONTAL_PADDING}px`,
+  };
 }
 
 export function openContextMenu(
@@ -53,7 +66,7 @@ export function openContextMenu(
   onOpenContextMenu({ x: event.clientX, y: event.clientY });
 }
 
-function FolderIcon({ expanded }: { expanded: boolean }) {
+function FolderIcon({ expanded, peeked }: { expanded: boolean; peeked: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -70,11 +83,20 @@ function FolderIcon({ expanded }: { expanded: boolean }) {
           strokeLinejoin="round"
         />
       ) : (
-        <path
-          d="M2.5 6.5a2 2 0 0 1 2-2h4.2l2 2h8.8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <>
+          <path
+            d="M2.5 6.5a2 2 0 0 1 2-2h4.2l2 2h8.8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {peeked && (
+            <>
+              <circle cx="7.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="13" r="1.1" fill="currentColor" stroke="none" />
+              <circle cx="16.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+            </>
+          )}
+        </>
       )}
     </svg>
   );
@@ -113,9 +135,12 @@ export function BookmarkRow({
       data-drop-id={id}
       {...DROP_DATA_ATTRIBUTES}
       data-bookmark-row-id={id}
-      className={[ROW_CLASS_NAME, 'gap-3 text-sidebar-text', isSourceDragging ? 'hidden' : ''].join(
-        ' ',
-      )}
+      className={[
+        ROW_CLASS_NAME,
+        'h-8',
+        'gap-3 text-sidebar-text',
+        isSourceDragging ? 'hidden' : '',
+      ].join(' ')}
       style={rowStyle(depth)}
     >
       <Favicon key={url} url={url} />
@@ -130,7 +155,9 @@ export function BookmarkFolderRow({
   depth,
   expanded,
   isDropTarget,
+  peeked = false,
   dropSection = 'bookmark',
+  heightClass = 'h-8',
   onToggle,
   onOpenContextMenu,
 }: BookmarkFolderRowProps) {
@@ -147,15 +174,18 @@ export function BookmarkFolderRow({
       data-drop-id={id}
       data-drop-kind="folder"
       data-drop-expanded={expanded ? 'true' : 'false'}
+      data-folder-peeked={peeked ? 'true' : 'false'}
       data-bookmark-row-id={id}
+      aria-description={peeked ? '開いているピンを含みます' : undefined}
       className={[
         ROW_CLASS_NAME,
+        heightClass,
         'gap-1.5 font-semibold text-sidebar-text',
         isDropTarget ? FOLDER_DROP_CLASS_NAME : '',
       ].join(' ')}
       style={rowStyle(depth)}
     >
-      <FolderIcon expanded={expanded} />
+      <FolderIcon expanded={expanded} peeked={peeked} />
       <span className="truncate">{title}</span>
     </button>
   );
