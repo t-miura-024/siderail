@@ -21,6 +21,7 @@ interface FolderPreviewProps {
 /**
  * 折りたたみフォルダの内容をホバーで見せる浮遊カード。
  * サイドパネルはパネル外へ描画できないため、パネルの矩形内に収める。
+ * 高さは最大5行分で、超えた分はカード内でスクロールする。
  */
 export function FolderPreview({
   anchor,

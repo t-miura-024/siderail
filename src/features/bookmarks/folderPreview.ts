@@ -5,6 +5,8 @@ export const FOLDER_PREVIEW_ROW_HEIGHT = 40;
 export const FOLDER_PREVIEW_ROW_GAP = 4;
 export const FOLDER_PREVIEW_PADDING = 6;
 export const FOLDER_PREVIEW_BORDER = 1;
+/** カードの高さ上限。これを超える行数は内部スクロールで見せる。 */
+export const FOLDER_PREVIEW_MAX_ROWS = 5;
 
 export interface FolderPreviewAnchor {
   left: number;
@@ -44,7 +46,8 @@ export function getFolderPreviewContentHeight(itemCount: number): number {
 /**
  * Folder Preview をサイドパネル内に収める位置を計算する。
  * `anchor` はフォルダ行、`container` はサイドパネルの矩形（どちらも viewport 座標）。
- * 下に内容が入りきらず、上の方が広い場合はカードを上へ反転する。
+ * 高さは FOLDER_PREVIEW_MAX_ROWS 行分を上限とし、下に内容が入りきらず、
+ * 上の方が広い場合はカードを上へ反転する。
  */
 export function computeFolderPreviewLayout(
   anchor: FolderPreviewAnchor,
@@ -70,8 +73,10 @@ export function computeFolderPreviewLayout(
     FOLDER_PREVIEW_ANCHOR_GAP;
   const spaceAbove =
     anchor.top - container.top - FOLDER_PREVIEW_VIEWPORT_MARGIN - FOLDER_PREVIEW_ANCHOR_GAP;
-  const above = spaceBelow < getFolderPreviewContentHeight(itemCount) && spaceAbove > spaceBelow;
-  const maxHeight = Math.max(0, above ? spaceAbove : spaceBelow);
+  const maxContentHeight = getFolderPreviewContentHeight(FOLDER_PREVIEW_MAX_ROWS);
+  const contentHeight = Math.min(getFolderPreviewContentHeight(itemCount), maxContentHeight);
+  const above = spaceBelow < contentHeight && spaceAbove > spaceBelow;
+  const maxHeight = Math.min(maxContentHeight, Math.max(0, above ? spaceAbove : spaceBelow));
   const top = above
     ? anchor.top - FOLDER_PREVIEW_ANCHOR_GAP
     : anchor.bottom + FOLDER_PREVIEW_ANCHOR_GAP;

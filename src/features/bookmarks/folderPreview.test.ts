@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { computeFolderPreviewLayout, getFolderPreviewContentHeight } from './folderPreview';
+import {
+  computeFolderPreviewLayout,
+  FOLDER_PREVIEW_MAX_ROWS,
+  getFolderPreviewContentHeight,
+} from './folderPreview';
 
 const panel = { left: 0, top: 0, width: 320, height: 800 };
+const maxCardHeight = getFolderPreviewContentHeight(FOLDER_PREVIEW_MAX_ROWS);
 
 describe('computeFolderPreviewLayout', () => {
   it('パネル幅が狭いときは左右8pxの余白に収める', () => {
@@ -11,7 +16,7 @@ describe('computeFolderPreviewLayout', () => {
       left: 8,
       top: 144,
       width: 224,
-      maxHeight: 648,
+      maxHeight: maxCardHeight,
       above: false,
     });
   });
@@ -27,7 +32,7 @@ describe('computeFolderPreviewLayout', () => {
       left: 150,
       top: 244,
       width: 320,
-      maxHeight: 398,
+      maxHeight: maxCardHeight,
       above: false,
     });
   });
@@ -39,7 +44,7 @@ describe('computeFolderPreviewLayout', () => {
       left: 312,
       top: 144,
       width: 320,
-      maxHeight: 648,
+      maxHeight: maxCardHeight,
       above: false,
     });
   });
@@ -49,7 +54,7 @@ describe('computeFolderPreviewLayout', () => {
       left: 8,
       top: 696,
       width: 304,
-      maxHeight: 688,
+      maxHeight: maxCardHeight,
       above: true,
     });
   });
@@ -59,7 +64,7 @@ describe('computeFolderPreviewLayout', () => {
       left: 8,
       top: 644,
       width: 304,
-      maxHeight: 636,
+      maxHeight: maxCardHeight,
       above: true,
     });
   });
@@ -79,11 +84,41 @@ describe('computeFolderPreviewLayout', () => {
       above: true,
     });
   });
+
+  it('5行を超えるフォルダでもカードの高さは5行分を上限にする', () => {
+    expect(computeFolderPreviewLayout({ left: 10, top: 100, bottom: 140 }, panel, 20)).toEqual({
+      left: 8,
+      top: 144,
+      width: 304,
+      maxHeight: maxCardHeight,
+      above: false,
+    });
+  });
+
+  it('高さ上限に収まるなら行数が多くても上へ反転しない', () => {
+    expect(
+      computeFolderPreviewLayout(
+        { left: 10, top: 600, bottom: 640 },
+        { ...panel, height: 882 },
+        20,
+      ),
+    ).toEqual({
+      left: 8,
+      top: 644,
+      width: 304,
+      maxHeight: maxCardHeight,
+      above: false,
+    });
+  });
 });
 
 describe('getFolderPreviewContentHeight', () => {
   it('行数からカードの高さを見積もる', () => {
     expect(getFolderPreviewContentHeight(3)).toBe(142);
+  });
+
+  it('5行分がカードの高さ上限になる', () => {
+    expect(getFolderPreviewContentHeight(FOLDER_PREVIEW_MAX_ROWS)).toBe(230);
   });
 
   it('行数が0のときは0を返す', () => {
