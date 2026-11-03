@@ -139,40 +139,36 @@ export function PinRow({
           </span>
         </button>
 
-        <div className="flex min-w-0 flex-1 items-center pr-2 pl-2">
-          <div className="flex min-w-0 flex-1 flex-col">
-            <button
-              type="button"
-              onClick={onActivate}
-              onPointerDown={handlePointerDown}
-              aria-current={isActive ? 'page' : undefined}
+        <button
+          type="button"
+          onClick={onActivate}
+          onPointerDown={handlePointerDown}
+          aria-current={isActive ? 'page' : undefined}
+          className={[
+            'flex h-full min-w-0 flex-1 flex-col justify-center pr-2 pl-2 text-left leading-tight transition-colors',
+            isOpen ? 'text-sidebar-text' : 'text-sidebar-muted group-hover:text-sidebar-text',
+          ].join(' ')}
+        >
+          <span className="min-w-0 truncate">{row.title}</span>
+
+          {canReset && (
+            <div
               className={[
-                'flex min-w-0 items-center text-left leading-tight transition-colors',
-                isOpen ? 'text-sidebar-text' : 'text-sidebar-muted group-hover:text-sidebar-text',
+                'pointer-events-none grid transition-[grid-template-rows] duration-150 ease-out motion-reduce:transition-none',
+                showSubtitle ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
               ].join(' ')}
             >
-              <span className="min-w-0 truncate">{row.title}</span>
-            </button>
-
-            {canReset && (
-              <div
-                className={[
-                  'pointer-events-none grid transition-[grid-template-rows] duration-150 ease-out motion-reduce:transition-none',
-                  showSubtitle ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-                ].join(' ')}
-              >
-                <div className="overflow-hidden">
-                  <span
-                    aria-hidden="true"
-                    className="block truncate pt-0.5 text-[11px] leading-tight text-sidebar-muted select-none"
-                  >
-                    {subtitle}
-                  </span>
-                </div>
+              <div className="overflow-hidden">
+                <span
+                  aria-hidden="true"
+                  className="block truncate pt-0.5 text-[11px] leading-tight text-sidebar-muted select-none"
+                >
+                  {subtitle}
+                </span>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </button>
 
         {liveTab !== undefined && (
           <div
